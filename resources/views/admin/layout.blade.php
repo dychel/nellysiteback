@@ -57,7 +57,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <span class="text-gray-600">Bonjour, {{ Auth::user()->first_name }}</span>
-                        <a href="{{ route('home') }}" class="text-gray-600 hover:text-gray-800" target="_blank">
+                        <a href="https://nos-provisions.netlify.app/" class="text-gray-600 hover:text-gray-800" target="_blank">
                             <i class="fas fa-external-link-alt mr-1"></i>Voir le site
                         </a>
                         <form action="{{ route('logout') }}" method="POST">
