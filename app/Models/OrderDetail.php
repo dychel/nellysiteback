@@ -11,15 +11,25 @@ class OrderDetail extends Model
 
     protected $fillable = [
         'order_id',
-        'product',
+        'product_id',
         'illustration',
         'quantity',
         'price',
         'total'
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+        'total' => 'decimal:2'
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 }

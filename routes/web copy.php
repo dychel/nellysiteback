@@ -27,22 +27,17 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
 
-// Page d'accueil redirige vers le login
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// Pages publiques
+//Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/produits', [ProductController::class, 'index'])->name('products.index');
+Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('products.show');
 
-// Authentification - PREMIÈRE PAGE
+// Authentification
 Route::get('/connexion', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/connexion', [LoginController::class, 'login']);
 Route::post('/deconnexion', [LoginController::class, 'logout'])->name('logout');
 Route::get('/inscription', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/inscription', [RegisterController::class, 'register']);
-
-// Pages publiques
-Route::get('/accueil', [HomeController::class, 'index'])->name('home');
-Route::get('/produits', [ProductController::class, 'index'])->name('products.index');
-Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('products.show');
 
 // Panier
 Route::get('/panier/individuel', [CartController::class, 'individuel'])->name('cart.individuel');
@@ -108,7 +103,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Administration
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard - PAGE APRÈS CONNEXION ADMIN
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Produits

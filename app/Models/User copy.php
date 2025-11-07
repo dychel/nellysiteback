@@ -12,15 +12,12 @@ class User extends Authenticatable
 
     protected $fillable = [
         'first_name',
-        'last_name', 
+        'last_name',
         'email',
         'phone',
         'password',
-        'gender',
-        'roles',
         'remarks',
-        'is_admin',
-        'last_login_at'
+        'is_admin'
     ];
 
     protected $hidden = [
@@ -29,13 +26,10 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
-        'is_admin' => 'boolean',
-        'roles' => 'array'
+        'roles' => 'array',
+        'is_admin' => 'boolean'
     ];
 
-    // Relations existantes
     public function orders()
     {
         return $this->hasMany(Order::class);
@@ -61,15 +55,8 @@ class User extends Authenticatable
         return $this->hasMany(Departure::class);
     }
 
-    // Nouvelle relation pour les tickets SAV
-    public function supportTickets()
+    public function getFullNameAttribute()
     {
-        return $this->hasMany(SupportTicket::class);
-    }
-
-    // Méthode pour mettre à jour la dernière connexion
-    public function updateLastLogin()
-    {
-        $this->update(['last_login_at' => now()]);
+        return $this->first_name . ' ' . $this->last_name;
     }
 }

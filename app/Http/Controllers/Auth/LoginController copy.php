@@ -11,11 +11,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            // Si l'utilisateur est déjà connecté, rediriger selon son rôle
-            if (Auth::user()->is_admin) {
-                return redirect()->route('admin.dashboard');
-            }
-            return redirect()->route('account');
+            return redirect()->route('/dashboard');
         }
 
         return view('auth.login');
@@ -30,16 +26,6 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            
-            // Mettre à jour la dernière connexion
-            $user = Auth::user();
-            $user->update(['last_login_at' => now()]);
-            
-            // Rediriger selon le rôle de l'utilisateur
-            if ($user->is_admin) {
-                return redirect()->route('admin.dashboard');
-            }
-            
             return redirect()->intended('account');
         }
 
