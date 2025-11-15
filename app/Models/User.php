@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // AJOUTER CETTE LIGNE
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable; // MODIFIER CETTE LIGNE
 
     protected $fillable = [
         'first_name',
@@ -71,5 +72,11 @@ class User extends Authenticatable
     public function updateLastLogin()
     {
         $this->update(['last_login_at' => now()]);
+    }
+
+    // Accessor pour le nom complet (AJOUTER)
+    public function getFullNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
     }
 }

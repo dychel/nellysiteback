@@ -57,8 +57,21 @@ class OrderController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'message' => 'Validation error',
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Vérifier que l'adresse appartient à l'utilisateur
+        $address = Address::where('id', $request->address_id)
+                         ->where('user_id', Auth::id())
+                         ->first();
+
+        if (!$address) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adresse non trouvée'
+            ], 404);
         }
 
         $cart = Session::get("cart.{$request->type}", []);
@@ -69,31 +82,28 @@ class OrderController extends Controller
             ], 400);
         }
 
-        $address = Address::find($request->address_id);
-        if (!$address) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Adresse invalide'
-            ], 400);
-        }
+        // Calculer le total
+        $cartFull = $this->getFullCart($cart);
+        $total = $this->calculateTotal($cartFull);
 
         // Créer la commande
         $order = Order::create([
             'user_id' => Auth::id(),
             'address_id' => $address->id,
             'is_paid' => false,
+            'total' => $total,
             'created_at' => now()
         ]);
 
         // Créer les détails de commande
-        foreach ($this->getFullCart($cart) as $item) {
+        foreach ($cartFull as $item) {
             OrderDetail::create([
                 'order_id' => $order->id,
                 'product_id' => $item['product']->id,
                 'illustration' => $item['product']->illustration,
                 'quantity' => $item['quantity'],
                 'price' => $item['product']->price,
-                'total' => $item['product']->price * $item['quantity'] * $item['weight']
+                'total' => $item['total']
             ]);
         }
 
@@ -107,19 +117,56 @@ class OrderController extends Controller
         ], 201);
     }
 
+    public function invoice($id)
+    {
+        $order = Order::with(['address', 'orderDetails.product'])
+                     ->where('id', $id)
+                     ->where('user_id', Auth::id())
+                     ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Commande non trouvée'
+            ], 404);
+        }
+
+        // Générer les données de facture
+        $invoiceData = [
+            'order' => $order,
+            'invoice_number' => 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT),
+            'invoice_date' => now()->format('d/m/Y'),
+            'due_date' => now()->addDays(30)->format('d/m/Y')
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $invoiceData
+        ]);
+    }
+
     private function getFullCart($cart)
     {
         $cartFull = [];
         foreach ($cart as $id => $details) {
             $product = Product::find($id);
             if ($product) {
+                $total = $product->price * $details['quantity'] * ($details['weight'] ?? 1);
                 $cartFull[] = [
                     'product' => $product,
                     'quantity' => $details['quantity'],
-                    'weight' => $details['weight'] ?? 1
+                    'weight' => $details['weight'] ?? 1,
+                    'total' => $total
                 ];
             }
         }
         return $cartFull;
+    }
+
+    private function calculateTotal($cart)
+    {
+        return array_reduce($cart, function($total, $item) {
+            return $total + $item['total'];
+        }, 0);
     }
 }
