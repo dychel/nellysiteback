@@ -18,6 +18,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'gender',
+        'address', // Ajouté ici
         'roles',
         'remarks',
         'is_admin',

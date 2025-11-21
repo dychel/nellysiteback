@@ -41,8 +41,8 @@ Route::post('/inscription', [RegisterController::class, 'register']);
 
 // Pages publiques
 Route::get('/accueil', [HomeController::class, 'index'])->name('home');
-Route::get('/produits', [ProductController::class, 'index'])->name('products.index');
-Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/produits', [ProductController::class, 'index'])->name('web.products.index');
+Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('web.products.show');
 
 // Panier
 Route::get('/panier/individuel', [CartController::class, 'individuel'])->name('cart.individuel');
