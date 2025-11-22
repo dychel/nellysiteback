@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderDetail;
+use App\Models\Address;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,7 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::with(['orderDetails.product'])
+        $orders = Order::with(['address', 'orderDetails.product'])
                       ->where('user_id', Auth::id())
                       ->orderBy('created_at', 'desc')
                       ->paginate(10);
@@ -28,7 +29,7 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with(['orderDetails.product'])
+        $order = Order::with(['address', 'orderDetails.product'])
                      ->where('id', $id)
                      ->where('user_id', Auth::id())
                      ->first();
@@ -49,25 +50,31 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'address' => 'required|string',
-            'type' => 'required|in:individual,collective',
-            'delivery_date' => 'required|date',
-            'meal_type' => 'nullable|in:chaud,froid,tous',
-            'calendar_type' => 'nullable|in:jour,semaine',
-            'payment_method' => 'required|in:card,paypal,transfer,cash'
+            'address_id' => 'required|exists:addresses,id',
+            'type' => 'required|in:individual,collective'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur de validation',
+                'message' => 'Validation error',
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Récupérer le panier de la session
+        // Vérifier que l'adresse appartient à l'utilisateur
+        $address = Address::where('id', $request->address_id)
+                         ->where('user_id', Auth::id())
+                         ->first();
+
+        if (!$address) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adresse non trouvée'
+            ], 404);
+        }
+
         $cart = Session::get("cart.{$request->type}", []);
-        
         if (empty($cart)) {
             return response()->json([
                 'success' => false,
@@ -75,23 +82,17 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // Calculer le total du panier
+        // Calculer le total
         $cartFull = $this->getFullCart($cart);
         $total = $this->calculateTotal($cartFull);
 
         // Créer la commande
         $order = Order::create([
             'user_id' => Auth::id(),
-            'address' => $request->address,
-            'type' => $request->type,
-            'delivery_date' => $request->delivery_date,
-            'meal_type' => $request->meal_type,
-            'calendar_type' => $request->calendar_type,
-            'payment_method' => $request->payment_method,
-            'is_paid' => $request->payment_method === 'cash' || $request->payment_method === 'transfer' ? false : false,
+            'address_id' => $address->id,
+            'is_paid' => false,
             'total' => $total,
-            'order_date' => now(),
-            'notes' => $request->notes
+            'created_at' => now()
         ]);
 
         // Créer les détails de commande
@@ -99,7 +100,6 @@ class OrderController extends Controller
             OrderDetail::create([
                 'order_id' => $order->id,
                 'product_id' => $item['product']->id,
-                'product_name' => $item['product']->name,
                 'illustration' => $item['product']->illustration,
                 'quantity' => $item['quantity'],
                 'price' => $item['product']->price,
@@ -107,19 +107,19 @@ class OrderController extends Controller
             ]);
         }
 
-        // Vider le panier après création de la commande
+        // Vider le panier
         Session::forget("cart.{$request->type}");
 
         return response()->json([
             'success' => true,
             'message' => 'Commande créée avec succès',
-            'data' => $order->load(['orderDetails.product'])
+            'data' => $order->load(['address', 'orderDetails.product'])
         ], 201);
     }
 
     public function invoice($id)
     {
-        $order = Order::with(['orderDetails.product'])
+        $order = Order::with(['address', 'orderDetails.product'])
                      ->where('id', $id)
                      ->where('user_id', Auth::id())
                      ->first();
@@ -151,10 +151,11 @@ class OrderController extends Controller
         foreach ($cart as $id => $details) {
             $product = Product::find($id);
             if ($product) {
-                $total = $product->price * $details['quantity'];
+                $total = $product->price * $details['quantity'] * ($details['weight'] ?? 1);
                 $cartFull[] = [
                     'product' => $product,
                     'quantity' => $details['quantity'],
+                    'weight' => $details['weight'] ?? 1,
                     'total' => $total
                 ];
             }

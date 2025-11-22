@@ -76,33 +76,4 @@ class Order extends Model
     {
         return $this->orderDetails->sum('total');
     }
-
-    // Accessor pour le type de calendrier formaté
-    public function getCalendarTypeFormattedAttribute()
-    {
-        return $this->calendar_type === 'jour' ? 'Journalier' : 'Hebdomadaire';
-    }
-
-    // Accessor pour le type de repas formaté
-    public function getMealTypeFormattedAttribute()
-    {
-        return match($this->meal_type) {
-            'chaud' => 'Repas chaud',
-            'froid' => 'Repas froid',
-            'tous' => 'Tous les repas',
-            default => 'Non spécifié'
-        };
-    }
-
-    // Accessor pour la méthode de paiement formatée
-    public function getPaymentMethodFormattedAttribute()
-    {
-        return match($this->payment_method) {
-            'card' => 'Carte bancaire',
-            'paypal' => 'PayPal',
-            'transfer' => 'Virement bancaire',
-            'cash' => 'Paiement en espèces',
-            default => 'Non spécifié'
-        };
-    }
 }
