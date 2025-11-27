@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -48,6 +49,12 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        // LOG: Début de la commande
+        Log::info('=== DÉBUT COMMANDE ===');
+        Log::info('User ID:', ['user_id' => Auth::id()]);
+        Log::info('Authentifié:', ['is_authenticated' => Auth::check()]);
+        Log::info('Données brutes reçues:', $request->all());
+
         $validator = Validator::make($request->all(), [
             'address' => 'required|string',
             'type' => 'required|in:individual,collective',
@@ -61,6 +68,12 @@ class OrderController extends Controller
         ]);
 
         if ($validator->fails()) {
+            // LOG: Erreurs de validation
+            Log::error('❌ ERREUR VALIDATION COMMANDE');
+            Log::error('Erreurs de validation:', $validator->errors()->toArray());
+            Log::error('Données reçues:', $request->all());
+            Log::info('=== FIN COMMANDE AVEC ERREURS ===');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur de validation',
@@ -71,11 +84,16 @@ class OrderController extends Controller
         // Vérifier si on utilise les produits de la session ou de la requête
         $useSessionProducts = empty($request->products);
         
+        Log::info('Mode utilisation:', ['use_session_products' => $useSessionProducts]);
+        
         if ($useSessionProducts) {
             // Méthode originale : récupérer le panier de la session
             $cart = Session::get("cart.{$request->type}", []);
             
+            Log::info('Panier session:', ['cart' => $cart, 'type' => $request->type]);
+            
             if (empty($cart)) {
+                Log::error('🚨 PANIER SESSION VIDE');
                 return response()->json([
                     'success' => false,
                     'message' => 'Panier vide'
@@ -87,7 +105,12 @@ class OrderController extends Controller
             $total = $this->calculateTotal($cartFull);
             $orderDetailsData = [];
 
-            foreach ($cartFull as $item) {
+            Log::info('Panier complet calculé:', [
+                'items_count' => count($cartFull),
+                'total' => $total
+            ]);
+
+            foreach ($cartFull as $index => $item) {
                 $orderDetailsData[] = [
                     'product_id' => $item['product']->id,
                     'product_name' => $item['product']->name,
@@ -96,12 +119,26 @@ class OrderController extends Controller
                     'price' => $item['product']->price,
                     'total' => $item['total']
                 ];
+                
+                Log::info("Produit session {$index}:", [
+                    'id' => $item['product']->id,
+                    'name' => $item['product']->name,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['product']->price,
+                    'total_item' => $item['total']
+                ]);
             }
         } else {
             // Nouvelle méthode : utiliser les produits envoyés dans la requête
             $products = $request->products;
             
+            Log::info('Produits reçus dans requête:', [
+                'count' => count($products),
+                'products' => $products
+            ]);
+            
             if (empty($products)) {
+                Log::error('🚨 AUCUN PRODUIT DANS REQUÊTE');
                 return response()->json([
                     'success' => false,
                     'message' => 'Aucun produit dans la commande'
@@ -112,7 +149,7 @@ class OrderController extends Controller
             $total = 0;
             $orderDetailsData = [];
 
-            foreach ($products as $item) {
+            foreach ($products as $index => $item) {
                 $product = Product::find($item['product_id']);
                 if ($product) {
                     $itemTotal = $product->price * $item['quantity'];
@@ -126,15 +163,35 @@ class OrderController extends Controller
                         'price' => $product->price,
                         'total' => $itemTotal
                     ];
+                    
+                    Log::info("Produit requête {$index}:", [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'quantity' => $item['quantity'],
+                        'price' => $product->price,
+                        'total_item' => $itemTotal
+                    ]);
+                } else {
+                    Log::error("🚨 PRODUIT NON TROUVÉ", [
+                        'product_id' => $item['product_id'],
+                        'index' => $index
+                    ]);
                 }
             }
+            
+            Log::info('Total calculé:', ['total' => $total]);
         }
 
         // Déterminer si la commande est payée
         $isPaid = $request->payment_method === 'cash' || $request->payment_method === 'transfer' ? false : false;
 
-        // Créer la commande
-        $order = Order::create([
+        Log::info('Paiement:', [
+            'method' => $request->payment_method,
+            'is_paid' => $isPaid
+        ]);
+
+        // Données de la commande
+        $orderData = [
             'user_id' => Auth::id(),
             'address' => $request->address,
             'type' => $request->type,
@@ -146,17 +203,29 @@ class OrderController extends Controller
             'total' => $total,
             'order_date' => now(),
             'notes' => $request->notes
-        ]);
+        ];
+
+        Log::info('Données commande à créer:', $orderData);
+
+        // Créer la commande
+        $order = Order::create($orderData);
+
+        Log::info('✅ COMMANDE CRÉÉE:', ['order_id' => $order->id]);
 
         // Créer les détails de commande
-        foreach ($orderDetailsData as $detail) {
+        foreach ($orderDetailsData as $index => $detail) {
             OrderDetail::create(array_merge($detail, ['order_id' => $order->id]));
+            Log::info("Détail {$index} créé:", $detail);
         }
 
         // Vider le panier après création de la commande (si utilisation session)
         if ($useSessionProducts) {
             Session::forget("cart.{$request->type}");
+            Log::info('Panier session vidé:', ['type' => $request->type]);
         }
+
+        Log::info('🎉 COMMANDE FINALISÉE AVEC SUCCÈS');
+        Log::info('=== FIN COMMANDE ===');
 
         return response()->json([
             'success' => true,
