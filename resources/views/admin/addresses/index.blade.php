@@ -149,7 +149,8 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                {{ $address->orders_count }} commande(s)
+                                <!-- {{ $address->orders_count }} commande(s) -->
+                                {{ \App\Models\Order::where('address', $address->address)->count() }} commande(s)
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">

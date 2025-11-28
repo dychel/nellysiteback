@@ -12,13 +12,20 @@ class Address extends Model
     protected $fillable = [
         'name',
         'address',
-        'postal_code',
+        'postal_code', 
         'city',
         'country'
     ];
 
+    // Relation modifiée pour utiliser le champ 'address' textuel
     public function orders()
     {
-        return $this->hasMany(Order::class);
+        return Order::where('address', $this->address);
+    }
+
+    // Accessor pour le comptage des commandes
+    public function getOrdersCountAttribute()
+    {
+        return Order::where('address', $this->address)->count();
     }
 }

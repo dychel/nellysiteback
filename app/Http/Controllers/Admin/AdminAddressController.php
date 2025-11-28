@@ -4,13 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Address;
+use App\Models\Order;
 use Illuminate\Http\Request;
 
 class AdminAddressController extends Controller
 {
     public function index()
     {
-        $addresses = Address::withCount('orders')->orderBy('name')->get();
+        // Récupérer les adresses sans withCount (puisque la relation directe n'existe plus)
+        $addresses = Address::orderBy('name')->get();
+        
+        // Ajouter manuellement le comptage des commandes
+        foreach ($addresses as $address) {
+            $address->orders_count = Order::where('address', $address->address)->count();
+        }
+
         return view('admin.addresses.index', compact('addresses'));
     }
 
@@ -48,9 +56,12 @@ class AdminAddressController extends Controller
 
     public function destroy(Address $address)
     {
-        if ($address->orders()->exists()) {
+        // Vérifier si l'adresse est utilisée dans des commandes
+        $orderCount = Order::where('address', $address->address)->count();
+        
+        if ($orderCount > 0) {
             return redirect()->route('admin.addresses.index')
-                ->with('error', 'Impossible de supprimer : cette adresse est utilisée dans des commandes.');
+                ->with('error', 'Impossible de supprimer : cette adresse est utilisée dans ' . $orderCount . ' commande(s).');
         }
 
         $address->delete();
