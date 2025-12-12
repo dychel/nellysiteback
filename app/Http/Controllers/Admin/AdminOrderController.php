@@ -10,7 +10,7 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'address', 'orderDetails']);
+        $query = Order::with(['user', 'orderDetails']);
 
         // Filtres
         if ($request->has('status') && $request->status !== '') {
@@ -32,7 +32,9 @@ class AdminOrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['user', 'address', 'orderDetails']);
+        // Charger les relations nécessaires
+        $order->load(['user', 'orderDetails.product']);
+        
         return view('admin.orders.show', compact('order'));
     }
 

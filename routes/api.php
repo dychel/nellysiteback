@@ -118,6 +118,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/departures/{id}', [DepartureController::class, 'show'])->name('api.departures.show');
     Route::post('/departures', [DepartureController::class, 'store'])->name('api.departures.store');
     Route::delete('/departures/{id}', [DepartureController::class, 'destroy'])->name('api.departures.destroy');
+    Route::patch('/departures/{id}/status', [DepartureController::class, 'api.departures.updateStatus']);
 
     // ========== ENQUÊTES ==========
     Route::get('/surveys', [SurveyController::class, 'index'])->name('api.surveys.index');

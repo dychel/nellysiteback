@@ -32,6 +32,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+
 // Authentification - PREMIÈRE PAGE
 Route::get('/connexion', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/connexion', [LoginController::class, 'login']);
@@ -167,6 +168,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     // Gestion (ancienne - gardée pour compatibilité)
     Route::get('/gestion', [ManagementController::class, 'index'])->name('management');
+
+    Route::get('/img/{filename}', function($filename) {
+    $path = public_path('uploads/' . $filename);
+    if (file_exists($path)) {
+        return response()->file($path);
+        }
+        abort(404);
+    });
 });
 
 // Home favori toggle

@@ -31,9 +31,6 @@ class Order extends Model
         'total' => 'decimal:2'
     ];
 
-    // Supprimer l'attribut calculé total puisque c'est maintenant un champ direct
-    // protected $appends = ['total'];
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -42,6 +39,12 @@ class Order extends Model
     public function orderDetails()
     {
         return $this->hasMany(OrderDetail::class);
+    }
+
+    // Dans App\Models\Order
+    public function departure()
+    {
+        return $this->hasOne(Departure::class, 'order_id');
     }
 
     // Méthode pour formater l'adresse si besoin
@@ -104,5 +107,17 @@ class Order extends Model
             'cash' => 'Paiement en espèces',
             default => 'Non spécifié'
         };
+    }
+
+    // Accessor pour le numéro de commande formaté
+    public function getOrderNumberAttribute()
+    {
+        return 'CMD-' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    // Méthode pour vérifier si la commande peut être annulée
+    public function canBeCancelled()
+    {
+        return !$this->is_paid && now()->diffInHours($this->created_at) < 24;
     }
 }

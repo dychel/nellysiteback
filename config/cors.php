@@ -7,9 +7,8 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
+    | Configure your settings for cross-origin resource sharing (CORS).
+    | This determines what cross-origin operations may execute in web browsers.
     |
     | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     |
@@ -19,9 +18,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:3000',           // Dev local
+        'https://nos-provisions.netlify.app', // Prod
+    ],
 
-    'allowed_origins_patterns' => [],
+    // Permet les sous-domaines Netlify (preview, staging, etc.)
+    'allowed_origins_patterns' => [
+        '/https:\/\/.*\.netlify\.app/',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -29,6 +34,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true, // Obligatoire pour Sanctum avec cookies
 
 ];

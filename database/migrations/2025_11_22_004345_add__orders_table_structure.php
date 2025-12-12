@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             // Ajouter les champs pour la commande "Commander mes repas"
-            $table->enum('type', ['individual', 'collective'])->default('individual')->after('user_id');
+            $table->enum('type', ['individual', 'collective','departure'])->default('individual')->after('user_id');
             $table->date('delivery_date')->nullable()->after('address');
             $table->enum('meal_type', ['chaud', 'froid', 'tous'])->nullable()->after('delivery_date');
             $table->enum('calendar_type', ['jour', 'semaine'])->nullable()->after('meal_type');
