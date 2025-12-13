@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\DepartureController;
 use App\Http\Controllers\Api\SurveyController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\GuideController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +70,14 @@ Route::put('/cart/{id}/weight', [CartController::class, 'updateWeight'])->name('
 // Paniers partagés publics
 Route::get('/shared-carts/{token}', [SharedCartController::class, 'show'])->name('api.shared-carts.show');
 
+// ==================== GUIDE PERSONNALISÉ (routes publiques) ====================
+Route::prefix('guide')->group(function () {
+    Route::post('/initialize', [GuideController::class, 'initialize']);
+    Route::post('/step/{step}', [GuideController::class, 'saveStep']);
+    Route::get('/current', [GuideController::class, 'getCurrentState']);
+    Route::post('/finalize', [GuideController::class, 'finalize']);
+});
+
 // ==================== ROUTES PROTÉGÉES ====================
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -118,7 +127,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/departures/{id}', [DepartureController::class, 'show'])->name('api.departures.show');
     Route::post('/departures', [DepartureController::class, 'store'])->name('api.departures.store');
     Route::delete('/departures/{id}', [DepartureController::class, 'destroy'])->name('api.departures.destroy');
-    Route::patch('/departures/{id}/status', [DepartureController::class, 'api.departures.updateStatus']);
+    Route::patch('/departures/{id}/status', [DepartureController::class, 'updateStatus'])->name('api.departures.updateStatus');
 
     // ========== ENQUÊTES ==========
     Route::get('/surveys', [SurveyController::class, 'index'])->name('api.surveys.index');
@@ -128,6 +137,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // ========== PRODUITS (actions utilisateur) ==========
     Route::post('/products/{id}/rate', [ProductController::class, 'rate'])->name('api.products.rate');
     Route::post('/products/{id}/review', [ProductController::class, 'addReview'])->name('api.products.add-review');
+
+    // ========== GUIDE PERSONNALISÉ (routes protégées) ==========
+    Route::prefix('guide')->group(function () {
+        Route::get('/history', [GuideController::class, 'history'])->name('api.guide.history');
+        Route::delete('/{id}', [GuideController::class, 'destroy'])->name('api.guide.destroy');
+    });
 
 });
 
@@ -177,6 +192,11 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/orders', [\App\Http\Controllers\Api\Admin\OrderController::class, 'index'])->name('api.admin.orders.index');
     Route::get('/orders/{id}', [\App\Http\Controllers\Api\Admin\OrderController::class, 'show'])->name('api.admin.orders.show');
     Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus'])->name('api.admin.orders.update-status');
+
+    // Gestion des guides admin
+    Route::get('/guides', [\App\Http\Controllers\Api\Admin\GuideController::class, 'index'])->name('api.admin.guides.index');
+    Route::get('/guides/{id}', [\App\Http\Controllers\Api\Admin\GuideController::class, 'show'])->name('api.admin.guides.show');
+    Route::delete('/guides/{id}', [\App\Http\Controllers\Api\Admin\GuideController::class, 'destroy'])->name('api.admin.guides.destroy');
 
 });
 
