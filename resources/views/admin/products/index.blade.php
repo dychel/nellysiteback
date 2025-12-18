@@ -68,7 +68,7 @@
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($product->illustration)
-                            <img src="https://nosprovisionsadmin.gt.tc/uploads/{{ $product->illustration }}" 
+                            <img src="/uploads/{{ $product->illustration }}" 
                                 alt="{{ $product->name }}" 
                                 class="w-12 h-12 object-cover rounded">
                         @else
